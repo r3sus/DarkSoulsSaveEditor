@@ -33,10 +33,8 @@ namespace DSSE
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.ToolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.OpenB = new System.Windows.Forms.ToolStripDropDownButton();
-            this.xbox360ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.pS3ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.PCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.platformSelectionComboBox1 = new System.Windows.Forms.ToolStripComboBox();
+            this.OpenA = new System.Windows.Forms.ToolStripButton();
             this.ToolStripLabel11 = new System.Windows.Forms.ToolStripLabel();
             this.SaveAllB = new System.Windows.Forms.ToolStripButton();
             this.ToolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
@@ -53,7 +51,12 @@ namespace DSSE
             this.CopyB = new System.Windows.Forms.ToolStripButton();
             this.SwapB = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
-            this.ToolStripButton3 = new System.Windows.Forms.ToolStripButton();
+            this.AddItemsTS = new System.Windows.Forms.ToolStripButton();
+            this.OpenB = new System.Windows.Forms.ToolStripDropDownButton();
+            this.xbox360ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pS3ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.PCToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.rPCS3ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolStrip2 = new System.Windows.Forms.ToolStrip();
             this.ToolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.ToolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -323,7 +326,8 @@ namespace DSSE
             // ToolStrip1
             // 
             this.ToolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.OpenB,
+            this.platformSelectionComboBox1,
+            this.OpenA,
             this.ToolStripLabel11,
             this.SaveAllB,
             this.ToolStripSeparator4,
@@ -340,48 +344,33 @@ namespace DSSE
             this.CopyB,
             this.SwapB,
             this.toolStripLabel2,
-            this.ToolStripButton3});
+            this.AddItemsTS,
+            this.OpenB});
             this.ToolStrip1.Location = new System.Drawing.Point(0, 0);
             this.ToolStrip1.Name = "ToolStrip1";
             this.ToolStrip1.Size = new System.Drawing.Size(861, 31);
             this.ToolStrip1.TabIndex = 4;
             this.ToolStrip1.Text = "ToolStrip1";
             // 
-            // OpenB
+            // platformSelectionComboBox1
             // 
-            this.OpenB.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.OpenB.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.xbox360ToolStripMenuItem,
-            this.pS3ToolStripMenuItem,
-            this.PCToolStripMenuItem});
-            this.OpenB.Image = ((System.Drawing.Image)(resources.GetObject("OpenB.Image")));
-            this.OpenB.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
-            this.OpenB.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.OpenB.Name = "OpenB";
-            this.OpenB.Size = new System.Drawing.Size(37, 28);
-            this.OpenB.Text = "ToolStripButton1";
-            this.OpenB.ToolTipText = "Open Save";
+            this.platformSelectionComboBox1.AutoSize = false;
+            this.platformSelectionComboBox1.DropDownWidth = 121;
+            this.platformSelectionComboBox1.Name = "platformSelectionComboBox1";
+            this.platformSelectionComboBox1.Size = new System.Drawing.Size(70, 23);
+            this.platformSelectionComboBox1.Text = "Platform";
             // 
-            // xbox360ToolStripMenuItem
+            // OpenA
             // 
-            this.xbox360ToolStripMenuItem.Name = "xbox360ToolStripMenuItem";
-            this.xbox360ToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-            this.xbox360ToolStripMenuItem.Text = "Xbox360";
-            this.xbox360ToolStripMenuItem.Click += new System.EventHandler(this.ToolStripButton1_Click);
-            // 
-            // pS3ToolStripMenuItem
-            // 
-            this.pS3ToolStripMenuItem.Name = "pS3ToolStripMenuItem";
-            this.pS3ToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-            this.pS3ToolStripMenuItem.Text = "PS3";
-            this.pS3ToolStripMenuItem.Click += new System.EventHandler(this.ToolStripButton1_Click);
-            // 
-            // PCToolStripMenuItem
-            // 
-            this.PCToolStripMenuItem.Name = "PCToolStripMenuItem";
-            this.PCToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-            this.PCToolStripMenuItem.Text = "PC";
-            this.PCToolStripMenuItem.Click += new System.EventHandler(this.ToolStripButton1_Click);
+            this.OpenA.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.OpenA.Image = ((System.Drawing.Image)(resources.GetObject("OpenA.Image")));
+            this.OpenA.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.OpenA.Name = "OpenA";
+            this.OpenA.Size = new System.Drawing.Size(40, 28);
+            this.OpenA.Text = "Open";
+            this.OpenA.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
+            this.OpenA.ToolTipText = "New Browse Dialog";
+            this.OpenA.Click += new System.EventHandler(this.OpenA_Click);
             // 
             // ToolStripLabel11
             // 
@@ -399,7 +388,7 @@ namespace DSSE
             this.SaveAllB.Size = new System.Drawing.Size(28, 28);
             this.SaveAllB.Text = "ToolStripButton2";
             this.SaveAllB.ToolTipText = "Save All";
-            this.SaveAllB.Click += new System.EventHandler(this.ToolStripButton2_Click);
+            this.SaveAllB.Click += new System.EventHandler(this.SaveAllB_Click);
             // 
             // ToolStripSeparator4
             // 
@@ -526,17 +515,61 @@ namespace DSSE
             this.toolStripLabel2.Size = new System.Drawing.Size(16, 28);
             this.toolStripLabel2.Text = " | ";
             // 
-            // ToolStripButton3
+            // AddItemsTS
             // 
-            this.ToolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.ToolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("ToolStripButton3.Image")));
-            this.ToolStripButton3.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
-            this.ToolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ToolStripButton3.Name = "ToolStripButton3";
-            this.ToolStripButton3.Size = new System.Drawing.Size(28, 28);
-            this.ToolStripButton3.Text = "Add Items";
-            this.ToolStripButton3.Visible = false;
-            this.ToolStripButton3.Click += new System.EventHandler(this.ToolStripButton3_Click);
+            this.AddItemsTS.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.AddItemsTS.Image = ((System.Drawing.Image)(resources.GetObject("AddItemsTS.Image")));
+            this.AddItemsTS.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.AddItemsTS.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.AddItemsTS.Name = "AddItemsTS";
+            this.AddItemsTS.Size = new System.Drawing.Size(28, 28);
+            this.AddItemsTS.Text = "Add Items";
+            this.AddItemsTS.Visible = false;
+            this.AddItemsTS.Click += new System.EventHandler(this.AddItemsTS_Click);
+            // 
+            // OpenB
+            // 
+            this.OpenB.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.OpenB.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.xbox360ToolStripMenuItem,
+            this.pS3ToolStripMenuItem,
+            this.PCToolStripMenuItem,
+            this.rPCS3ToolStripMenuItem});
+            this.OpenB.Image = ((System.Drawing.Image)(resources.GetObject("OpenB.Image")));
+            this.OpenB.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.OpenB.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.OpenB.Name = "OpenB";
+            this.OpenB.Size = new System.Drawing.Size(37, 28);
+            this.OpenB.Text = "ToolStripButton1";
+            this.OpenB.ToolTipText = "Open Save (Legacy Browse Dialog)";
+            // 
+            // xbox360ToolStripMenuItem
+            // 
+            this.xbox360ToolStripMenuItem.Name = "xbox360ToolStripMenuItem";
+            this.xbox360ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.xbox360ToolStripMenuItem.Text = "Xbox360";
+            this.xbox360ToolStripMenuItem.Click += new System.EventHandler(this.OpenB_TSMI_Click);
+            // 
+            // pS3ToolStripMenuItem
+            // 
+            this.pS3ToolStripMenuItem.Name = "pS3ToolStripMenuItem";
+            this.pS3ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.pS3ToolStripMenuItem.Text = "PS3";
+            this.pS3ToolStripMenuItem.Click += new System.EventHandler(this.OpenB_TSMI_Click);
+            // 
+            // PCToolStripMenuItem
+            // 
+            this.PCToolStripMenuItem.Name = "PCToolStripMenuItem";
+            this.PCToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.PCToolStripMenuItem.Text = "PC";
+            this.PCToolStripMenuItem.Click += new System.EventHandler(this.OpenB_TSMI_Click);
+            // 
+            // rPCS3ToolStripMenuItem
+            // 
+            this.rPCS3ToolStripMenuItem.Name = "rPCS3ToolStripMenuItem";
+            this.rPCS3ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.rPCS3ToolStripMenuItem.Text = "RPCS3";
+            this.rPCS3ToolStripMenuItem.Click += new System.EventHandler(this.OpenB_TSMI_Click);
             // 
             // ToolStrip2
             // 
@@ -3035,7 +3068,7 @@ namespace DSSE
     internal System.Windows.Forms.ToolStripLabel Status;
     internal System.Windows.Forms.ToolStripProgressBar ToolStripProgressBar1;
     internal System.Windows.Forms.ToolStripSeparator ToolStripSeparator1;
-    internal System.Windows.Forms.ToolStripButton ToolStripButton3;
+    internal System.Windows.Forms.ToolStripButton AddItemsTS;
 	private System.ComponentModel.IContainer components;
 	private TabPage tabPage4;
 	internal GroupBox GroupBox2;
@@ -3132,6 +3165,9 @@ namespace DSSE
     private ToolStripMenuItem xbox360ToolStripMenuItem;
     private ToolStripMenuItem pS3ToolStripMenuItem;
         private ToolStripMenuItem PCToolStripMenuItem;
+        private ToolStripMenuItem rPCS3ToolStripMenuItem;
+        private ToolStripComboBox platformSelectionComboBox1;
+        private ToolStripButton OpenA;
     }
 }
 

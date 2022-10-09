@@ -13,6 +13,7 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -25,7 +26,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -56,6 +56,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ISOLib, Version=0.1.3.2, Culture=neutral, processorArchitecture=MSIL">
@@ -190,11 +193,53 @@
     <Content Include="Resources\ISOLib.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent></PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">
-  </Target>
+  </Target>                                               
   -->
+  <Target Name="BeforeBuild">
+    <CallTarget Targets="Clean" Condition="$(Configuration) == 'Release'"/>
+    <Copy SourceFiles="$(ProjectDir)\Resources\DataBase.db" DestinationFolder="$(TargetDir)" />    
+  </Target>
+  <Target Name="Clean">
+    <RemoveDir Directories="$(TargetDir)" />
+  </Target>
+  <Target Name="AfterBuild" Condition="$(Configuration) == 'Release'">
+    <CallTarget Targets="Zip" />
+  </Target>
+  <Target Name="Zip">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="MyAssemblyIdentities" />
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <OutName>DarkSoulsSaveEditor</OutName>
+      <Ver>%(MyAssemblyIdentities.Version)</Ver>
+      <ArcPath>$(SolutionDir)\Releases\$(OutName)_$(Ver).zip</ArcPath>
+      <rdm>README_$(Ver).md</rdm>
+    </PropertyGroup>
+    <MakeDir Directories="$(ArcPath)\.." />
+    <Delete Files="$(ArcPath)" />
+    <ItemGroup>
+      <FilesToMove Include="$(ArcPath)\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(ArcPath)\..\old\" />
+    <Move SourceFiles="@(FilesToMove)" DestinationFolder="$(ArcPath)\..\old\" />
+    <Copy SourceFiles="$(SolutionDir)\README.md" DestinationFiles="$(TargetDir)\$(rdm)" />
+    <ReadLinesFromFile File="$(ProjectDir)\Log\note.md">
+      <Output TaskParameter="Lines" ItemName="ItemsFromFile" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(TargetDir)\$(rdm)" Lines="## Build info  %0a%0a$(Configuration) $(Ver)%0a;@(ItemsFromFile)" />
+    <Move SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)\$(OutName)_$(Ver).exe" />
+    <ZipDirectory SourceDirectory="$(TargetDir)" DestinationFile="$(ArcPath)" />
+  </Target>
 </Project>

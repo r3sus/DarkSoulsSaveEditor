@@ -76,9 +76,12 @@ namespace DSSE
             RingBoxes.Add(comboBoxRing2);
 
             TabControl1.SelectedTab = TabPage1;
+
+            foreach (var f in plats)
+                platformSelectionComboBox1.Items.Add(f);
         }
 
-        public void ToolStripButton3_Click(Object sender, EventArgs e)
+        public void AddItemsTS_Click(Object sender, EventArgs e)
         {
             if (ItemTextLists.Count > 0)
             {
@@ -128,6 +131,11 @@ namespace DSSE
                             return;
                         }
                         break;
+
+                    case Platform.RPCS3:
+                        MessageBox.Show("Not implemented");
+                        return;
+                        //break;
 
                     case Platform.PS3:
                         //TODO This
@@ -204,6 +212,11 @@ namespace DSSE
                             return;
                         }
                         break;
+
+                    case Platform.RPCS3:
+                        MessageBox.Show("Not implemented");
+                        return;
+                        //break;
 
                     case Platform.PS3:
                         //TODO This
@@ -287,63 +300,71 @@ namespace DSSE
 
         #region Some Functions
 
-        public bool ValidateSave(string File)
+        
+        public bool ValidateSave(string File0)
         {
+            // todo add error logging
             if (platform == Platform.None) return false;
-            if (platform != Platform.PS3)
-            {
-                using (
-                    var reader =
-                        new BinaryReader(new FileStream(File, FileMode.Open, FileAccess.Read, FileShare.Read)))
-                {
-                    //We multi-plat now!
-                    switch (platform)
-                    {
-                        case Platform.PC:
-                            byte[] magic = { 0x42, 0x4e, 0x44, 0x34 };
-                            for (var i = 0; i <= magic.Length - 1; i++)
-                            {
-                                if (reader.ReadByte() != magic[i])
-                                    goto Thing;
-                            }
-                            return true;
-                        //stfs magic
-                        case Platform.XBOX360:
-                            Thing:
-                            magic = new byte[] { 0x43, 0x4f, 0x4e, 0x20 };
-                            reader.BaseStream.Position = 0;
-                            for (var i = 0; i <= magic.Length - 1; i++)
-                            {
-                                if (reader.ReadByte() != magic[i])
-                                    return false;
-                            }
-                            reader.BaseStream.Position = 0x360;
-                            //titleid
-                            magic = new byte[] { 0x4e, 0x4d, 0x8, 0x3a };
-                            for (var i = 0; i <= magic.Length - 1; i++)
-                            {
-                                if (reader.ReadByte() != magic[i])
-                                    return false;
-                            }
-                            break;
-                    }
-                    reader.Close();
-                }
-                return true;
-            }
-            //PS3 Section
-            //TODO additional checks
-            var ps3 = new Ps3SaveManager(File, Ps3Key);
-            //We determine if this save folder is actually dark souls based on the titleid.
-            string[] ps3ids =
-            {
-                "BLUS30782",
-                "BLUS30807", "BLES01396", "BLES01402", "BLES01765", "BLJM60993", "BLAS50387", "BLJM60517", "BLAS50528",
-                "BLAS50397"
-            };
-            return (ps3ids.Any(s => s.Equals(ps3.Param_SFO.TitleID.Substring(0, 9))));
-        }
 
+            if (new[] { Platform.PS3, Platform.RPCS3 }.Contains(platform))
+            {
+
+                string fo = File0; 
+                if (platform == Platform.RPCS3) fo = Path.GetDirectoryName(File0); 
+                fo += "/PARAM.SFO";
+
+                var sfo = new PARAM_SFO(fo);
+
+                string[] ps3ids ={
+                            "BLUS30782","BLUS30807", "BLES01396", "BLES01402", "BLES01765", "BLJM60993", "BLAS50387", "BLJM60517", "BLAS50528","BLAS50397"
+                        };
+
+                //We determine if this save folder is actually dark souls based on the titleid.
+                return ps3ids.Any(s => s + "DRAKS005" == sfo.TitleID) &&
+                sfo.Title == "DARK SOULS";   
+            }
+
+            bool res = true;
+
+            if (!(new[] { Platform.PC, Platform.XBOX360 }.Contains(platform))) { return false; }
+
+            using (
+                var reader = new BinaryReader(new FileStream(File0, FileMode.Open, FileAccess.Read, FileShare.Read))
+                )
+            {
+
+                var magicsL = new List<byte[]>()
+                {
+                    new byte[] { 0x42, 0x4e, 0x44, 0x34 }
+                };
+                var rbsp = new int[] { 0 };
+
+                if (plat == "Xbox360")
+                {
+                    magicsL = new List<byte[]>()
+                {
+new byte[] { 0x43, 0x4f, 0x4e, 0x20} , //stfs
+new byte[] { 0x4e, 0x4d, 0x8, 0x3a }  //titleid 
+        };
+                    rbsp = new int[] { 0, 0x360 };
+                }
+
+                for (var i = 0; i<rbsp.Length; i++)
+                {
+                    reader.BaseStream.Position = rbsp[i];
+                    foreach (var j in magicsL[i])
+                    {
+                        res = (reader.ReadByte() == j);
+                        if (!res) break;
+                    }
+                    if (!res) break;
+                }
+
+                reader.Close(); // 'using'
+            }
+                return res;
+            
+        }
         public void SetNumericValue(NumericUpDown field, int value)
         {
             field.Value = value > field.Maximum ? field.Maximum : ((value < field.Minimum ? field.Minimum : value));
@@ -407,43 +428,31 @@ namespace DSSE
 
         public bool FixSaveHash()
         {
-            try
+            var x = new MD5CryptoServiceProvider();
+            var buffer = new byte[1];
+            if (platform == Platform.PC)
             {
-                using (var fs = new FileStream(XSelectedSave, FileMode.Create, FileAccess.Write))
+                var length = (int)BitConverter.ToUInt32(XSave, 16);
+                Array.Resize(ref buffer, length - 16);
+                Array.Copy(XSave, 20, buffer, 0, buffer.Length);
+                Array.Copy(x.ComputeHash(buffer), 0, XSave, length + 4, 16);
+                if (XSave.Length == length + 36)
                 {
-                    fs.Write(XSave, 0, XSave.Length);
-                }
-
-                var x = new MD5CryptoServiceProvider();
-                var buffer = new byte[1];
-                if (platform == Platform.PC)
-                {
-                    var length = (int)BitConverter.ToUInt32(XSave, 16);
-                    Array.Resize(ref buffer, length - 16);
+                    Array.Resize(ref buffer, length);
                     Array.Copy(XSave, 20, buffer, 0, buffer.Length);
-                    Array.Copy(x.ComputeHash(buffer), 0, XSave, length + 4, 16);
-                    if (XSave.Length == length + 36)
-                    {
-                        Array.Resize(ref buffer, length);
-                        Array.Copy(XSave, 20, buffer, 0, buffer.Length);
-                        Array.Copy(x.ComputeHash(buffer), 0, XSave, length + 20, 16);
-                    }
-                    Array.Resize(ref buffer, XSave.Length - 16);
-                    Array.Copy(XSave, 16, buffer, 0, buffer.Length);
-                    Array.Copy(x.ComputeHash(buffer), 0, XSave, 0, 16);
-                    buffer = null;
-                    return true;
+                    Array.Copy(x.ComputeHash(buffer), 0, XSave, length + 20, 16);
                 }
                 Array.Resize(ref buffer, XSave.Length - 16);
-                Array.Copy(XSave, 0, buffer, 0, buffer.Length);
-                Array.Copy(x.ComputeHash(buffer), 0, XSave, XSave.Length - 16, 16);
+                Array.Copy(XSave, 16, buffer, 0, buffer.Length);
+                Array.Copy(x.ComputeHash(buffer), 0, XSave, 0, 16);
                 buffer = null;
                 return true;
             }
-            catch
-            {
-                return false;
-            }
+            Array.Resize(ref buffer, XSave.Length - 16);
+            Array.Copy(XSave, 0, buffer, 0, buffer.Length);
+            Array.Copy(x.ComputeHash(buffer), 0, XSave, XSave.Length - 16, 16);
+            buffer = null;
+            return true;
         }
 
         public bool ValidHexString(string value)
@@ -976,91 +985,92 @@ namespace DSSE
                 ItemTextLists = null;
             }
             SectionContainer1.Items.Clear();
-            ToolStripButton3.Visible = false;
+            AddItemsTS.Visible = false;
             ToolStripSeparator16.Visible = false;
             ItemList = null;
         }
 
-        public void ParseSaveFile(string File)
+        public void ParseSaveFile(string File0)
         {
-            try
+            if (!System.IO.File.Exists(Application.StartupPath + "\\DataBase.db"))
+                throw new FileNotFoundException();
+            SlotSelector slot;
+            switch (platform)
             {
-                if (!System.IO.File.Exists(Application.StartupPath + "\\DataBase.db"))
-                    throw new FileNotFoundException();
-                SlotSelector slot;
-                switch (platform)
-                {
-                    case Platform.PC:
+                case Platform.PC:
 
-                        if (ReadPCBlocks())
-                        {
-                            slot = new SlotSelector(XPCEntries.Select(item => item.Name).ToArray());
-                            if (slot.ShowDialog() != DialogResult.OK)
-                                return;
-                            XSelectedSave = slot.SelectedSave;
-                            XSave = ExtractPCBlock(XSelectedSave);
-                        }
-                        break;
-
-                    case Platform.XBOX360:
-                        var stfs = new Initialize(File);
-                        slot = new SlotSelector(stfs.EmbeddedFileNames);
-                        if (slot.ShowDialog() == DialogResult.OK)
-                        {
-                            XSelectedSave = slot.SelectedSave;
-                            XSave = stfs.Extract(XSelectedSave);
-                            stfs.Close();
-                        }
-                        else
-                        {
-                            stfs.Close();
+                    if (ReadPCBlocks())
+                    {
+                        slot = new SlotSelector(XPCEntries.Select(item => item.Name).ToArray());
+                        if (slot.ShowDialog() != DialogResult.OK)
                             return;
-                        }
-                        break;
-
-                    case Platform.PS3:
-                        //TODO Fix this shit
-                        var ps3 = new Ps3SaveManager(File, Ps3Key);
-                        var files = new List<ComboboxItem>();
-                        for (var i = 0; i < ps3.Files.Count(); i++)
-                        {
-                            if (ps3.Files[i].PFDEntry.file_name.EndsWith("USER.DAT"))
-                            {
-                                files.Add(new ComboboxItem { Text = ps3.Files[i].PFDEntry.file_name, Value = i });
-                            }
-                        }
-
-                        slot = new SlotSelector(files.ToArray());
-                        if (slot.ShowDialog() != DialogResult.OK) return;
                         XSelectedSave = slot.SelectedSave;
-                        XSave = ps3.Param_PFD.DecryptToBytes(ps3.Files[slot.SelectedIndex].FilePath);
-                        break;
-                }
-                if (XSave != null)
-                {
-                    ReadItemDB(Application.StartupPath + "\\DataBase.db");
-                    ReadItems();
-                    if (!ReadStatistics())
+                        XSave = ExtractPCBlock(XSelectedSave);
+                    }
+                    break;
+
+                case Platform.XBOX360:
+                    var stfs = new Initialize(File0);
+                    slot = new SlotSelector(stfs.EmbeddedFileNames);
+                    if (slot.ShowDialog() == DialogResult.OK)
                     {
-                        if (
-                            MessageBox.Show("Save slot is empty!, Do you wish to repick?", "Invalid Slot",
-                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                        XSelectedSave = slot.SelectedSave;
+                        XSave = stfs.Extract(XSelectedSave);
+                        stfs.Close();
+                    }
+                    else
+                    {
+                        stfs.Close();
+                        return;
+                    }
+                    break;
+                case Platform.RPCS3:
+                    XSelectedSave = Path.GetFileName(File0);
+                    XSave = File.ReadAllBytes(File0);
+                    break;
+                case Platform.PS3:
+                    //TODO Fix this
+                    var ps3 = new Ps3SaveManager(File0, Ps3Key);
+                    var files = new List<ComboboxItem>();
+                    for (var i = 0; i < ps3.Files.Count(); i++)
+                    {
+                        if (ps3.Files[i].PFDEntry.file_name.EndsWith("USER.DAT"))
                         {
-                            Close(false);
-                            return;
+                            files.Add(new ComboboxItem { Text = ps3.Files[i].PFDEntry.file_name, Value = i });
                         }
-                        ParseSaveFile(File);
                     }
-                    if (ItemTextLists.Count > 0)
-                    {
-                        ToolStripButton3.Visible = true;
-                        ToolStripSeparator16.Visible = true;
-                    }
-                }
+
+                    slot = new SlotSelector(files.ToArray());
+                    if (slot.ShowDialog() != DialogResult.OK) return;
+                    XSelectedSave = slot.SelectedSave;
+
+                    XSave = ps3.Param_PFD.DecryptToBytes(ps3.Files[slot.SelectedIndex].FilePath);
+                    break;
             }
-            catch (Exception ex)
+            if (XSave != null)
             {
-                MessageBox.Show(ex.Message, "Failed to Parse Save!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ReadItemDB(Application.StartupPath + "\\DataBase.db"); //todo: read that on startup ; omit app path
+                ReadItems();
+                if (!ReadStatistics())
+                {
+                    if (platform == Platform.RPCS3)
+                    { MessageBox.Show("Save slot is empty!"); return; }
+                    
+                    if (
+                        MessageBox.Show("Save slot is empty!, Do you wish to repick?", "Invalid Slot",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                    {
+                        Close(false);
+                        return;
+                    }
+                    
+                    ParseSaveFile(File0); // todo: fix re\pick for RPCS3
+                }
+                if (ItemTextLists.Count > 0)
+                {
+                    AddItemsTS.Visible = true;
+                    ToolStripSeparator16.Visible = true;
+                }
             }
         }
 
@@ -2049,53 +2059,57 @@ namespace DSSE
 
         #region Events
 
-        public void ToolStripButton1_Click(Object sender, EventArgs e)
+        // todo: use single platform identifier (string/int/bool)
+
+        readonly string[] plats = new[] { "None", "Xbox360", "PC", "PS3", "RPCS3" };
+        readonly string[] fltrs = new[] { "",
+                "DRAKS0005|DRAKS0005",
+                "DRAKS0005.sl2|DRAKS0005*.sl2",
+                "PARAM.PFD|PARAM.PFD",
+                "*USER.DAT|*USER.DAT" };
+
+        string plat;
+        int pli;
+        
+        public void SaveOpen() //int i1) //string plat
         {
-            if ((ToolStripMenuItem)sender == xbox360ToolStripMenuItem)
+            
+            var open = new OpenFileDialog
             {
-                var open = new OpenFileDialog
-                {
-                    Title = "Load your Xbox 360 savegame file",
-                    Filter = "DRAKS0005(xbox360)|DRAKS0005*"
-                };
-                if (open.ShowDialog() == DialogResult.OK)
-                {
-                    Xfile = open.FileName;
-                    platform = Platform.XBOX360;
-                }
-            }
-            else if ((ToolStripMenuItem)sender == PCToolStripMenuItem)
+                Title = "Load your " + plat + " savegame file",
+                Filter = fltrs[pli]
+            };
+            
+            platform = (Platform)pli;
+
+            if (open.ShowDialog() == DialogResult.OK)
             {
-                var open = new OpenFileDialog
-                {
-                    Title = "Load your PC savegame file",
-                    Filter = "DRAKS0005.sl2(PC)|DRAKS0005*.sl2"
-                };
-                if (open.ShowDialog() == DialogResult.OK)
-                {
-                    Xfile = open.FileName;
-                    platform = Platform.PC;
-                }
+                Xfile = open.FileName;
+                if (platform == Platform.PS3) Xfile = open.FileName + "/../";
             }
             else
             {
-                //PS3
-                var open = new FolderBrowserDialog
-                {
-                    Description = "Load your PS3 savegame folder",
-                    ShowNewFolderButton = false
-                };
-                if (open.ShowDialog() != DialogResult.OK) return;
-
-                Xfile = open.SelectedPath;
-                platform = Platform.PS3;
+                //MessageBox.Show("No File Selected");
+                return;
             }
 
-            if (Xfile != null && ValidateSave(Xfile)) ParseSaveFile(Xfile);
-            else
+            if (!ValidateSave(Xfile))
             {
-                platform = Platform.None;
+                MessageBox.Show("Save Validation Failed");
+                return;
             }
+
+            ParseSaveFile(Xfile);
+        }
+
+
+
+        public void OpenB_TSMI_Click(Object sender, EventArgs e)
+        {
+            plat = ((ToolStripMenuItem)sender).Text;
+            pli = Array.IndexOf(plats, plat); 
+
+            SaveOpen();
         }
 
         public void Button3_Click(object sender, EventArgs e)
@@ -2123,7 +2137,7 @@ namespace DSSE
             ViewSection(SectionContainer1.Text, ItemStorage.Save);
         }
 
-        public void ToolStripButton2_Click(Object sender, EventArgs e)
+        public void SaveAllB_Click(Object sender, EventArgs e)
         {
             if (Xfile == null)
                 return;
@@ -2181,7 +2195,9 @@ namespace DSSE
                             MessageBox.Show(ex.Message);
                         }
                         break;
-
+                    case Platform.RPCS3:
+                        File.WriteAllBytes(Xfile, XSave);
+                        break;
                     case Platform.PS3:
                         var ps3 = new Ps3SaveManager(Xfile, Ps3Key);
                         ps3.Param_PFD.Encrypt(XSave, ps3.Files.Single(i => i.PFDEntry.file_name == XSelectedSave));
@@ -2190,7 +2206,7 @@ namespace DSSE
                         break;
                 }
                 MessageBox.Show(
-                    "Succesfully Saved" + ((platform != Platform.XBOX360) ? "." : " , and Rehashed/Resigned."), "Saved",
+                    "Succesfully Saved" + ((platform != Platform.XBOX360) ? "." : ", Rehashed/Resigned."), "Saved",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -2800,7 +2816,7 @@ namespace DSSE
         {
             var s = new StringBuilder();
             s.AppendLine("Dark Souls Save Editor");
-            s.AppendLine("Version : " + ProductVersion + " PS3 Edition");
+            s.AppendLine("Version : " + ProductVersion);
             s.AppendLine("Author : Jappi88. Converted to C# and fixed/improved by Mr Nukealizer");
             s.AppendLine("\nSpecial Thanks Goes to : ");
             s.AppendLine("PureIso");
@@ -2830,6 +2846,15 @@ namespace DSSE
 
         public void SaveAsB_Click(Object sender, EventArgs e)
         {
+            // todo fix saveas ps3 or use slot swap
+            
+            if (platform == Platform.PS3) 
+            {
+                MessageBox.Show("Use slot swap feature for PS3. Not implemented for PS3. "); 
+                return;
+            };
+            
+
             if (Xfile == null)
                 return;
             if (XSave == null)
@@ -2838,16 +2863,23 @@ namespace DSSE
                 throw new FileNotFoundException(Xfile);
             var x = new SaveFileDialog
             {
-                FileName = "DRAKS0005",
+                FileName = Path.GetFileName(Xfile),
                 Title = "Save as",
-                Filter = (platform == Platform.PC) ? "DRAKS0005.sl2|*.sl2" : "DRAKS0005|*.*"
-            };
+                Filter = fltrs[(int)platform] 
+                // (platform == Platform.PC) ? "DRAKS0005.sl2|*.sl2" : Xfile+"|*.*"
+            };                        
+
             if (x.ShowDialog() == DialogResult.OK)
             {
                 try
-                {
+                {                    
                     if (XSave == null)
-                    {
+                    {                        
+                        if (platform == Platform.RPCS3)
+                        {
+                            MessageBox.Show("There is not Saveslot Loaded", "Empty Save");
+                            return;
+                        }
                         if (
                             MessageBox.Show("There is not Saveslot Loaded.. Do u wish to load one ?", "Empty Save",
                                 MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -2856,6 +2888,8 @@ namespace DSSE
                             return;
                         }
                     }
+                    //if (platform == Platform.PS3) x.FileName += "/../"; //folder
+
                     string path;
                     if (Xfile == x.FileName)
                     {
@@ -2921,6 +2955,7 @@ namespace DSSE
             Process.Start("http://www.360haven.com");
         }
 
+        // todo D&D for all platforms
         public void Form1_DragDrop(object sender, DragEventArgs e)
         {
             var x = (string[])e.Data.GetData("FileDrop", false);
@@ -2944,6 +2979,20 @@ namespace DSSE
         }
 
         #endregion Events
+
+        private void OpenA_Click(object sender, EventArgs e)
+        {
+            var i1 = platformSelectionComboBox1.SelectedIndex;
+
+            if (i1 == -1)
+            {
+                MessageBox.Show("Platform not selected");
+                return;
+            }
+            pli = i1;
+            plat = plats[pli];
+            SaveOpen();
+        }
     }
 
     public enum ItemStorage
@@ -2957,7 +3006,8 @@ namespace DSSE
         None,
         XBOX360,
         PC,
-        PS3
+        PS3,
+        RPCS3
     }
 
     #region Item Class
